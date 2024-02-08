@@ -1,0 +1,707 @@
+inder
+inderd
+Invisible
+
+AlteredPerception — 10/08/2023 8:39 PM
+Found out today that simulink actually generates C code for algorithms that you define in simulink. It can also do this for specific hardware. We can build the controller in simulink, have it generate a code for us, and tune that prebuilt code
+beter_bhim — 10/08/2023 8:42 PM
+Amazing
+inder — 11/28/2023 7:14 PM
+Image
+AlteredPerception — 11/28/2023 7:15 PM
+::D:D:D:D:D:D:DDD:D:D:D:D::DDD:D:D::DDD:D:D:D::D:DD:D::D:D:D:D::DDD
+inder — 01/12/2024 11:47 AM
+yo eric
+can i take teh ardiuno off you
+i wanna do some testint
+AlteredPerception — 01/12/2024 12:03 PM
+Yeah
+My ass is in
+Sauga tho
+💀
+inder — 01/12/2024 12:03 PM
+LMAO its alright ill get it monday
+AlteredPerception — 01/12/2024 12:03 PM
+Aiiii
+Man must be bored out of his mind
+li — 01/30/2024 2:54 PM
+#include <Servo.h>
+
+Servo ESC;     // create servo object to control the ESC
+int pulse_width;  // value from the analog pin
+
+void setup() {
+    Serial.begin(115200);
+  // Attach the ESC on pin 9
+    ESC.attach(9,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
+}
+
+void loop() {
+  calibrate_and_start();
+  while(1) {
+    pulse_width = analogRead(A0);   // reads the value of the potentiometer (value between 0 and 1023)
+    pulse_width = map(pulse_width, 0, 1023, 0, 180);   // scale it to use it with the servo library (value between 0 and 180)
+    ESC.write(pulse_width);    // Send the signal to the ESC
+  }
+}
+
+void calibrate_and_start() {
+  ESC.write(180); //setting to full throttle/max pulse_width
+  delay(5000); //should beep two times 
+
+  ESC.write(0); //setting to zero throttle
+  delay(5000); //should beep five times
+}
+AlteredPerception — 02/01/2024 2:43 PM
+
+
+
+
+/*************************************************** 
+  This is an example for our Adafruit 16-channel PWM & Servo driver
+  Servo test - this will drive 8 servos, one after the other on the
+  first 8 pins of the PCA9685
+
+  Pick one up today in the adafruit shop!
+Expand
+message.txt
+6 KB
+li — 02/02/2024 4:04 PM
+Yo Eric send the updated code
+AlteredPerception — 02/02/2024 7:21 PM
+ok
+``````
+/*************************************************** 
+  This is an example for our Adafruit 16-channel PWM & Servo driver
+  Servo test - this will drive 8 servos, one after the other on the
+  first 8 pins of the PCA9685
+
+  Pick one up today in the adafruit shop!
+Expand
+message.txt
+6 KB
+@inder send code
+ali is putting together the codes
+inder — 02/05/2024 10:00 PM
+bet bet sorry just saw this
+but its gonna be updated tomo with the ToF on board
+inder — 02/06/2024 2:22 PM
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+
+/* This driver uses the Adafruit unified sensor library (Adafruit_Sensor),
+   which provides a common 'type' for sensor data and some helper functions.
+
+   To use this driver you will also need to download the Adafruit_Sensor
+   library and include it in your libraries folder.
+
+   You should also assign a unique ID to this sensor for use with
+   the Adafruit Sensor API so that you can identify this particular
+   sensor in any data logs, etc.  To assign a unique ID, simply
+   provide an appropriate value in the constructor below (12345
+   is used by default in this example).
+
+   Connections
+   ===========
+   Connect SCL to analog 5
+   Connect SDA to analog 4
+   Connect VDD to 3.3-5V DC
+   Connect GROUND to common ground
+
+   History
+   =======
+   2015/MAR/03  - First release (KTOWN)
+*/
+
+/* Set the delay between fresh samples */
+uint16_t BNO055_SAMPLERATE_DELAY_MS = 100;
+
+// Check I2C device address and correct line below (by default address is 0x29 or 0x28)
+//                                   id, address
+Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
+
+void setup(void)
+{
+  Serial.begin(115200);
+
+  while (!Serial) delay(10);  // wait for serial port to open!
+
+  Serial.println("Orientation Sensor Test"); Serial.println("");
+
+  /* Initialise the sensor */
+  if (!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while (1);
+  }
+
+  delay(1000);
+}
+
+void loop(void)
+{
+  //could add VECTOR_ACCELEROMETER, VECTOR_MAGNETOMETER,VECTOR_GRAVITY...
+  sensors_event_t orientationData , angVelocityData , linearAccelData, magnetometerData, accelerometerData, gravityData;
+  bno.getEvent(&orientationData, Adafruit_BNO055::VECTOR_EULER);
+  bno.getEvent(&angVelocityData, Adafruit_BNO055::VECTOR_GYROSCOPE);
+  bno.getEvent(&linearAccelData, Adafruit_BNO055::VECTOR_LINEARACCEL);
+  bno.getEvent(&magnetometerData, Adafruit_BNO055::VECTOR_MAGNETOMETER);
+  bno.getEvent(&accelerometerData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+  bno.getEvent(&gravityData, Adafruit_BNO055::VECTOR_GRAVITY);
+
+  printEvent(&orientationData);
+  printEvent(&angVelocityData);
+  printEvent(&linearAccelData);
+  printEvent(&magnetometerData);
+  printEvent(&accelerometerData);
+  printEvent(&gravityData);
+
+  int8_t boardTemp = bno.getTemp();
+  Serial.println();
+  Serial.print(F("temperature: "));
+  Serial.println(boardTemp);
+
+  uint8_t system, gyro, accel, mag = 0;
+  bno.getCalibration(&system, &gyro, &accel, &mag);
+  Serial.println();
+  Serial.print("Calibration: Sys=");
+  Serial.print(system);
+  Serial.print(" Gyro=");
+  Serial.print(gyro);
+  Serial.print(" Accel=");
+  Serial.print(accel);
+  Serial.print(" Mag=");
+  Serial.println(mag);
+
+  Serial.println("--");
+  delay(BNO055_SAMPLERATE_DELAY_MS);
+}
+
+void printEvent(sensors_event_t* event) {
+  double x = -1000000, y = -1000000 , z = -1000000; //dumb values, easy to spot problem
+  if (event->type == SENSOR_TYPE_ACCELEROMETER) {
+    Serial.print("Accl:");
+    x = event->acceleration.x;
+    y = event->acceleration.y;
+... (49 lines left)
+Collapse
+message.txt
+5 KB
+this is jsut the imu
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+#include "Adafruit_VL53L1X.h"
+
+Expand
+message.txt
+6 KB
+this is imu and tof
+#include "Adafruit_VL53L1X.h"
+
+#define IRQ_PIN 2
+#define XSHUT_PIN 3
+
+Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
+
+void setup() {
+  Serial.begin(115200);
+  while (!Serial) delay(10);
+
+  Serial.println(F("Adafruit VL53L1X sensor demo"));
+
+  Wire.begin();
+  if (! vl53.begin(0x29, &Wire)) {
+    Serial.print(F("Error on init of VL sensor: "));
+    Serial.println(vl53.vl_status);
+    while (1)       delay(10);
+  }
+  Serial.println(F("VL53L1X sensor OK!"));
+
+  Serial.print(F("Sensor ID: 0x"));
+  Serial.println(vl53.sensorID(), HEX);
+
+  if (! vl53.startRanging()) {
+    Serial.print(F("Couldn't start ranging: "));
+    Serial.println(vl53.vl_status);
+    while (1)       delay(10);
+  }
+  Serial.println(F("Ranging started"));
+
+  // Valid timing budgets: 15, 20, 33, 50, 100, 200 and 500ms!
+  vl53.setTimingBudget(50);
+  Serial.print(F("Timing budget (ms): "));
+  Serial.println(vl53.getTimingBudget());
+
+  /*
+  vl.VL53L1X_SetDistanceThreshold(100, 300, 3, 1);
+  vl.VL53L1X_SetInterruptPolarity(0);
+  */
+}
+
+void loop() {
+  int16_t distance;
+
+  if (vl53.dataReady()) {
+    // new measurement for the taking!
+    distance = vl53.distance();
+    if (distance == -1) {
+      // something went wrong!
+      Serial.print(F("Couldn't get distance: "));
+      Serial.println(vl53.vl_status);
+      return;
+    }
+    Serial.print(F("Distance: "));
+    Serial.print(distance);
+    Serial.println(" mm");
+
+    // data is read out, time for another reading!
+    vl53.clearInterrupt();
+  }
+}
+this is tof
+fix i2c addressing
+li — 02/06/2024 3:34 PM
+
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+#include <Servo.h>
+#include <PID_v1.h>
+
+
+// called this way, it uses the default address 0x40
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+#define SERVOMIN  210 // This is the 'minimum' pulse length count (out of 4096) original 100
+#define SERVOMAX   300// This is the 'maximum' pulse length count (out of 4096)  original 650
+#define USMIN  500 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
+#define USMAX  2500 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
+#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
+
+Servo ESC;     // create servo object to control the ESC
+int pulse_width;  // value from the analog pin
+bool setupDone = false;
+
+// our servo # counter
+uint8_t servonum = 0;
+
+// Setting offsets
+int offsets[4]; // Declare an array for servo values
+
+
+// // Altitude control variables
+// double SetpointAltitude, InputAltitude, OutputThrust;
+// double KpAlt=2, KiAlt=5, KdAlt=1;
+// PID PIDAltitude(&InputAltitude, &OutputThrust, &SetpointAltitude, KpAlt, KiAlt, KdAlt, DIRECT);
+
+// // Orientation control variables
+// double SetpointOrientation, InputOrientation, OutputServo;
+// double KpOri=4, KiOri=0.2, KdOri=0.5;
+// PID PIDOrientation(&InputOrientation, &OutputServo, &SetpointOrientation, KpOri, KiOri, KdOri, DIRECT);
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("8 channel Servo test!");
+
+  // Attach the ESC on pin 9
+  ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
+  pinMode(LED_BUILTIN, OUTPUT);
+  pwm.begin();
+
+  pwm.setOscillatorFrequency(25000000);
+  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
+
+  offsets[0] = -15;
+  offsets[1] = 5;
+  offsets[2] = 0;
+  offsets[3] = 0;
+
+  // Initialize the PID objects
+  // PIDAltitude.SetMode(AUTOMATIC);
+  // PIDAltitude.SetSampleTime(10); // Adjust based on your system's needs
+  // PIDAltitude.SetOutputLimits(-255, 255); // Adjust based on your thrust control system
+
+  // PIDOrientation.SetMode(AUTOMATIC);
+  // PIDOrientation.SetSampleTime(10); // Adjust based on your system's needs
+  // PIDOrientation.SetOutputLimits(-90, 90); // Example limits for servo angle adjustments
+
+  delay(10);
+}
+
+// You can use this function if you'd like to set the pulse length in seconds
+// e.g. setServoPulse(0, 0.001) is a ~1 millisecond pulse width. It's not precise!
+void setServoPulse(uint8_t n, double pulse) {
+  double pulselength;
+  
+  pulselength = 1000000;   // 1,000,000 us per second
+  pulselength /= SERVO_FREQ;   // Analog servos run at ~60 Hz updates
+  Serial.print(pulselength); Serial.println(" us per period"); 
+  pulselength /= 4096;  // 12 bits of resolution
+  Serial.print(pulselength); Serial.println(" us per bit"); 
+  pulse *= 1000000;  // convert input seconds to us
+  pulse /= pulselength;
+  Serial.println(pulse);
+  pwm.setPWM(n, 0, pulse);
+}
+
+void calibrate_and_start() {
+  ESC.write(180); //setting to full throttle/max pulse_width
+  delay(5000); //should beep two times 
+
+  ESC.write(0); //setting to zero throttle
+  delay(5000); //should beep five times
+}
+
+void setServoAngle(uint8_t n, double pulse) {
+  //implement properly
+    int offset = offsets[n];
+    for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX*pulse/100; pulselen++) {
+          pwm.setPWM(servonum+n, 0, pulselen+offset);
+    }
+}
+
+void loop() {
+  if (setupDone == false) {
+... (80 lines left)
+Collapse
+message.txt
+6 KB
+inder — Today at 2:10 PM
+InderveerDhanda
+inder — Today at 2:40 PM
+#include <Adafruit_BME280.h>
+Adafruit_BME280 bme;
+
+void setup() 
+{
+  Serial.begin(9600);
+  if (!bme.begin(0x76)) 
+  {
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    while (1);
+  }
+}
+
+void loop()
+{
+  Serial.print("Temperature = ");
+  Serial.print(bme.readTemperature()); //prints in °C
+  //Uncomment the line below to get temperature in °F
+  //Serial.print(bme.readTemperature() * 9 / 5 + 32); 
+  Serial.println("*C");
+
+  Serial.print("Pressure = ");
+  Serial.print(bme.readPressure() / 100.0F);
+  Serial.println("hPa");
+
+  Serial.print("Humidity = ");
+  Serial.print(bme.readHumidity());
+  Serial.println("%");
+
+  Serial.println();
+  delay(1000);
+}
+AlteredPerception — Today at 2:49 PM
+
+
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
+#include <utility/imumaths.h>
+#include "Adafruit_VL53L1X.h"
+#include <Adafruit_BME280.h>
+Expand
+message.txt
+7 KB
+code: servos and some weird esc stuff but msotly servos
+``````
+/*************************************************** 
+  This is an example for our Adafruit 16-channel PWM & Servo driver
+  Servo test - this will drive 8 servos, one after the other on the
+  first 8 pins of the PCA9685
+
+  Pick one up today in the adafruit shop!
+  ------> http://www.adafruit.com/products/815
+  
+  These drivers use I2C to communicate, 2 pins are required to  
+  interface.
+
+  Adafruit invests time and resources providing this open source code, 
+  please support Adafruit and open-source hardware by purchasing 
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.  
+  BSD license, all text above must be included in any redistribution
+ ****************************************************/
+
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+#include <Servo.h>
+
+// called this way, it uses the default address 0x40
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+// you can also call it with a different address you want
+//Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x41);
+// you can also call it with a different address and I2C interface
+//Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40, Wire);
+
+// Depending on your servo make, the pulse width min and max may vary, you 
+// want these to be as small/large as possible without hitting the hard stop
+// for max range. You'll have to tweak them as necessary to match the servos you
+// have!
+#define SERVOMIN  210 // This is the 'minimum' pulse length count (out of 4096) original 100
+#define SERVOMAX   300// This is the 'maximum' pulse length count (out of 4096)  original 650
+#define USMIN  500 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
+#define USMAX  2500 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
+#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
+
+//Servo ESC;     // create servo object to control the ESC
+int pulse_width;  // value from the analog pin
+bool setupDone = false;
+
+// our servo # counter
+uint8_t servonum = 0;
+
+void setup() {
+  
+  Serial.begin(9600);
+  Serial.println("8 channel Servo test!");
+
+  // Attach the ESC on pin 9
+  ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
+  //calibrate_and_start();
+  pinMode(LED_BUILTIN, OUTPUT);
+  pwm.begin();
+  /*
+   * In theory the internal oscillator (clock) is 25MHz but it really isn't
+   * that precise. You can 'calibrate' this by tweaking this number until
+   * you get the PWM update frequency you're expecting!
+   * The int.osc. for the PCA9685 chip is a range between about 23-27MHz and
+   * is used for calculating things like writeMicroseconds()
+   * Analog servos run at ~50 Hz updates, It is importaint to use an
+   * oscilloscope in setting the int.osc frequency for the I2C PCA9685 chip.
+   * 1) Attach the oscilloscope to one of the PWM signal pins and ground on
+   *    the I2C PCA9685 chip you are setting the value for.
+   * 2) Adjust setOscillatorFrequency() until the PWM update frequency is the
+   *    expected value (50Hz for most ESCs)
+   * Setting the value here is specific to each individual I2C PCA9685 chip and
+   * affects the calculations for the PWM update frequency. 
+   * Failure to correctly set the int.osc value will cause unexpected PWM results
+   */
+  pwm.setOscillatorFrequency(25000000);
+  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
+
+  delay(10);
+}
+
+// You can use this function if you'd like to set the pulse length in seconds
+// e.g. setServoPulse(0, 0.001) is a ~1 millisecond pulse width. It's not precise!
+void setServoPulse(uint8_t n, double pulse) {
+  double pulselength;
+  
+  pulselength = 1000000;   // 1,000,000 us per second
+  pulselength /= SERVO_FREQ;   // Analog servos run at ~60 Hz updates
+  Serial.print(pulselength); Serial.println(" us per period"); 
+  pulselength /= 4096;  // 12 bits of resolution
+  Serial.print(pulselength); Serial.println(" us per bit"); 
+  pulse *= 1000000;  // convert input seconds to us
+  pulse /= pulselength;
+  Serial.println(pulse);
+  pwm.setPWM(n, 0, pulse);
+}
+
+//void calibrate_and_start() {
+ // ESC.write(180); //setting to full throttle/max pulse_width
+ // delay(5000); //should beep two times 
+
+ // ESC.write(0); //setting to zero throttle
+... (40 lines left)
+Collapse
+message.txt
+6 KB
+﻿
+
+#include <Wire.h>
+#include <Adafruit_PWMServoDriver.h>
+#include <Servo.h>
+#include <PID_v1.h>
+
+
+// called this way, it uses the default address 0x40
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
+#define SERVOMIN  210 // This is the 'minimum' pulse length count (out of 4096) original 100
+#define SERVOMAX   300// This is the 'maximum' pulse length count (out of 4096)  original 650
+#define USMIN  500 // This is the rounded 'minimum' microsecond length based on the minimum pulse of 150
+#define USMAX  2500 // This is the rounded 'maximum' microsecond length based on the maximum pulse of 600
+#define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
+
+Servo ESC;     // create servo object to control the ESC
+int pulse_width;  // value from the analog pin
+bool setupDone = false;
+
+// our servo # counter
+uint8_t servonum = 0;
+
+// Setting offsets
+int offsets[4]; // Declare an array for servo values
+
+
+// // Altitude control variables
+// double SetpointAltitude, InputAltitude, OutputThrust;
+// double KpAlt=2, KiAlt=5, KdAlt=1;
+// PID PIDAltitude(&InputAltitude, &OutputThrust, &SetpointAltitude, KpAlt, KiAlt, KdAlt, DIRECT);
+
+// // Orientation control variables
+// double SetpointOrientation, InputOrientation, OutputServo;
+// double KpOri=4, KiOri=0.2, KdOri=0.5;
+// PID PIDOrientation(&InputOrientation, &OutputServo, &SetpointOrientation, KpOri, KiOri, KdOri, DIRECT);
+
+void setup() {
+  Serial.begin(9600);
+  Serial.println("8 channel Servo test!");
+
+  // Attach the ESC on pin 9
+  ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
+  pinMode(LED_BUILTIN, OUTPUT);
+  pwm.begin();
+
+  pwm.setOscillatorFrequency(25000000);
+  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
+
+  offsets[0] = -15;
+  offsets[1] = 5;
+  offsets[2] = 0;
+  offsets[3] = 0;
+
+  // Initialize the PID objects
+  // PIDAltitude.SetMode(AUTOMATIC);
+  // PIDAltitude.SetSampleTime(10); // Adjust based on your system's needs
+  // PIDAltitude.SetOutputLimits(-255, 255); // Adjust based on your thrust control system
+
+  // PIDOrientation.SetMode(AUTOMATIC);
+  // PIDOrientation.SetSampleTime(10); // Adjust based on your system's needs
+  // PIDOrientation.SetOutputLimits(-90, 90); // Example limits for servo angle adjustments
+
+  delay(10);
+}
+
+// You can use this function if you'd like to set the pulse length in seconds
+// e.g. setServoPulse(0, 0.001) is a ~1 millisecond pulse width. It's not precise!
+void setServoPulse(uint8_t n, double pulse) {
+  double pulselength;
+  
+  pulselength = 1000000;   // 1,000,000 us per second
+  pulselength /= SERVO_FREQ;   // Analog servos run at ~60 Hz updates
+  Serial.print(pulselength); Serial.println(" us per period"); 
+  pulselength /= 4096;  // 12 bits of resolution
+  Serial.print(pulselength); Serial.println(" us per bit"); 
+  pulse *= 1000000;  // convert input seconds to us
+  pulse /= pulselength;
+  Serial.println(pulse);
+  pwm.setPWM(n, 0, pulse);
+}
+
+void calibrate_and_start() {
+  ESC.write(180); //setting to full throttle/max pulse_width
+  delay(5000); //should beep two times 
+
+  ESC.write(0); //setting to zero throttle
+  delay(5000); //should beep five times
+}
+
+void setServoAngle(uint8_t n, double pulse) {
+  //implement properly
+    int offset = offsets[n];
+    for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX*pulse/100; pulselen++) {
+          pwm.setPWM(servonum+n, 0, pulselen+offset);
+    }
+}
+
+void loop() {
+  if (setupDone == false) {
+    calibrate_and_start();
+    setupDone = true;
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(3000);
+    digitalWrite(LED_BUILTIN,LOW);
+  }
+
+  // for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX; pulselen++) {
+  //   pwm.setPWM(servonum, 0, pulselen-15);
+  //   pwm.setPWM(servonum+1, 0, pulselen+5);
+  //   pwm.setPWM(servonum+2, 0, pulselen);
+  //   pwm.setPWM(servonum+3, 0, pulselen);
+  //   delay(10);
+  // }
+
+  // //delay(500);
+  // for (uint16_t pulselen = SERVOMAX; pulselen > SERVOMIN; pulselen--) {
+  //   pwm.setPWM(servonum, 0, pulselen-15);
+  //   pwm.setPWM(servonum+1, 0, pulselen+5);
+  //   pwm.setPWM(servonum+2, 0, pulselen);
+  //   pwm.setPWM(servonum+3, 0, pulselen);
+  //   delay(10);
+  // }
+
+  setServoAngle(0, 25);
+  ESC.write(25);    
+  delay(1000);
+  ESC.write(50);
+  delay(1000);
+  ESC.write(75);
+  delay(1000);
+  ESC.write(20);
+  delay(1000);
+  setServoAngle(0, 100);
+
+  // while(1) {
+  //     InputAltitude = readAltitude(); // Implement this function to read from your barometer
+  //     InputOrientation = readOrientation(); // Implement this function to read from your IMU
+
+  //     // Define your Setpoints (desired states)
+  //     SetpointAltitude = 0; // Implement this based on your landing logic
+  //     SetpointOrientation = 0; // Implement this based on your landing logic
+
+  //     // Compute PID outputs
+  //     PIDAltitude.Compute();
+  //     PIDOrientation.Compute();
+      
+  //      // Adjust thrust and servos based on PID outputs
+  //     adjustThrust(OutputThrust);
+  //     adjustServos(OutputServo);
+
+  //     delay(100);
+
+  // }
+
+}
+
+// Functions to read sensors, adjust actuators, and define desired states
+double readAltitude() {
+  // Read and return altitude from barometer
+  return 0.0; // Placeholder
+}
+
+double readOrientation() {
+  // Read and return orientation from IMU
+  return 0.0; // Placeholder
+}
+
+void adjustThrust(double thrust) {
+  // Adjust rocket thrust based on PID output
+  // Placeholder: Implement your thrust control logic here
+}
+
+void adjustServos(double servoAngle) {
+  // Adjust servo angles based on PID output
+  // Placeholder: Implement your servo control logic here
+}
+
+
+message.txt
+6 KB

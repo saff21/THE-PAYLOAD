@@ -2,7 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include "Adafruit_VL53L1X.h"
+// #include "Adafruit_VL53L1X.h"
 #include <Adafruit_BME280.h>
 #include <Adafruit_PWMServoDriver.h>
 #include <Servo.h>
@@ -17,7 +17,7 @@
 // called this way, it uses the default address 0x40
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 Servo ESC;     // create servo object to control the ESC
-Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
+// Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
 Adafruit_BME280 bme;
 
@@ -46,7 +46,7 @@ void setup() {
   Serial.println("ROCKET");
 
   // Attaching the ESC and LED pins
-  ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
+  // ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
   pinMode(LED_BUILTIN, OUTPUT);
   
   // Setting up PWM
@@ -63,19 +63,19 @@ void setup() {
     while (1);
   }
 
-  if (!bme.begin(0x76)) 
-  {
-    Serial.println("Could not find a valid BME280 sensor, check wiring!");
-    while (1);
-  }
+  // if (!bme.begin(0x76)) 
+  // {
+  //   Serial.println("Could not find a valid BME280 sensor, check wiring!");
+  //   while (1);
+  // }
 
   delay(1000);
 
   // Servo angle offsets
   offsets[0] = -15;
-  offsets[1] = 5;
+  offsets[1] = -4;
   offsets[2] = 0;
-  offsets[3] = 0;
+  offsets[3] = -10;
 
   // Initialize the PID objects
   PID_Yaw.SetMode(AUTOMATIC);
@@ -97,32 +97,32 @@ void calibrate_and_start() {
   delay(5000); //should beep five times
 }
 
-void setVaneAngle(uint8_t n, double percent) {
+void setVaneAngle(uint8_t servo_num, double percent) {
     // where 0 is fully left, 100 is fully right 
-    int offset = offsets[n];
+    int offset = offsets[servo_num];
     int pulselen =  210 + 0.9 * percent; // normalizing the range of servo between 210-300
-    pwm.setPWM(servonum+n, 0, pulselen+offset);
+    pwm.setPWM(servo_num, 0, pulselen+offset);
 }
 
 void adjustYaw(double percent) {
   setVaneAngle(0, percent);
-  setVaneAngle(2, percent);
+  setVaneAngle(2, 100-percent);
 }
 
 void adjustPitch(double percent) {
   setVaneAngle(1, percent);
-  setVaneAngle(3, percent);
+  setVaneAngle(3, 100-percent);
 }
 
  
 void loop() {
-  while (setupDone == false) {
-    calibrate_and_start();
-    setupDone = true;
-    digitalWrite(LED_BUILTIN,HIGH);
-    delay(3000);
-    digitalWrite(LED_BUILTIN,LOW);
-  }
+  // while (setupDone == false) {
+  //   calibrate_and_start();
+  //   setupDone = true;
+  //   digitalWrite(LED_BUILTIN,HIGH);
+  //   delay(3000);
+  //   digitalWrite(LED_BUILTIN,LOW);
+  // }
 
   // for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX; pulselen++) {
   //   pwm.setPWM(servonum, 0, pulselen-15);
@@ -132,8 +132,8 @@ void loop() {
   //   delay(10);
   // }
 
-  // //delay(500);
-  // for (uint16_t pulselen = SERVOMAX; pulselen > SERVOMIN; pulselen++) {
+  // delay(500);
+  // for (uint16_t pulselen = SERVOMAX; pulselen > SERVOMIN; pulselen--) {
   //   pwm.setPWM(servonum, 0, pulselen-15);
   //   pwm.setPWM(servonum+1, 0, pulselen+5);
   //   pwm.setPWM(servonum+2, 0, pulselen);
@@ -141,60 +141,65 @@ void loop() {
   //   delay(10);
   // }
 
-  // setServoAngle(0, 0);
-  // setServoAngle(2, 0);
 
-  ESC.write(50);
-  delay(1000);
+  // ESC.write(50);
 
-  // setServoAngle(0, 100);
-  // setServoAngle(2, 100);
+  // delay(1000);
+
+  // setVaneAngle(0, 100);
+  // setVaneAngle(2, 0);
+
+  // delay(1000);
+
+  // setVaneAngle(0, 0);
+  // setVaneAngle(2, 100);
+
+  // delay(1000);
 
   // ESC.write(50); 
-
+  // adjustPitch(100);
+  // delay(100);
   // adjustYaw(0);
-  // delay(1000);
+  // delay(500);
   // adjustYaw(50);
-  // delay(1000);
+  // delay(500);
   // adjustYaw(100);
-  // delay(1000);
+  // delay(500);
   // adjustYaw(50);
-  // delay(1000);
+  // delay(500);
 
   // adjustPitch(0);
-  // delay(1000);
+  // delay(500);
   // adjustPitch(50);
-  // delay(1000);
+  // delay(500);
   // adjustPitch(100);
-  // delay(1000);
+  // delay(500);
   // adjustPitch(50);
-  // delay(1000);
+  // delay(500);
 
-  // Defining setpoints
+  // // Defining setpoints
   // int SetpointAltitude = 0; 
-  // int SetpointYaw = 0;
-  // int SetpointPitch = 0;
-
-  // float InputYaw, InputPitch;
+  int SetpointYaw = 0;
+  int SetpointPitch = 0;
 
 
-  // while(1) {
+  while(1) {
 
-  //     InputAltitude = readAltitude(); // Implement this function to read from your barometer
-  //     readOrientation(InputYaw, InputPitch); // This updates InputYaw and InputPitch
+      // InputAltitude = readAltitude(); // Implement this function to read from your barometer
+      readOrientation(InputYaw, InputPitch); // This updates InputYaw and InputPitch
 
-  //     // Compute PID outputs
-  //     PID_Yaw.Compute();
-  //     PID_Pitch.Compute();
+      // Compute PID outputs
+      PID_Yaw.Compute();
+      PID_Pitch.Compute();
       
-  //      // Adjust thrust and servos based on PID outputs
-  //     // adjustThrust(OutputThrust);
-  //     // adjustServos(OutputServo);
-  //     adjustYaw(OutputYaw);
-  //     adjustPitch(OutputPitch);
+       // Adjust thrust and servos based on PID outputs
+      // adjustThrust(OutputThrust);
+      // adjustServos(OutputServo);
+      adjustYaw(OutputYaw);
+      adjustPitch(OutputPitch);
 
-  //     delay(10);
-  // }
+      delay(10);
+  }
 
 }
 
@@ -204,10 +209,15 @@ double readAltitude() {
   return 0.0; // Placeholder
 }
 
-void readOrientation(float &yaw, float &pitch) {
+void readOrientation(double &yaw, double &pitch) {
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   yaw = euler.x();    // Heading
   pitch = euler.z();  // Pitch
+  Serial.print("Yaw: ");
+  Serial.println(yaw);
+
+  Serial.print("Pitch: ");
+  Serial.println(pitch);
 }
 
 

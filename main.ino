@@ -4,20 +4,22 @@
 #include <utility/imumaths.h>
 // #include "Adafruit_VL53L1X.h"
 #include <Adafruit_BME280.h>
-#include <Adafruit_PWMServoDriver.h>
 #include <Servo.h>
 #include <PID_v1.h>
+
+
 
 #define SERVOMIN  210 // This is the 'minimum' pulse length count (out of 4096) original 100
 #define SERVOMAX   300 // This is the 'maximum' pulse length count (out of 4096)  original 650
 #define SERVO_FREQ 50 // Analog servos run at ~50 Hz updates
-#define IRQ_PIN 2
-#define XSHUT_PIN 3
+// #define IRQ_PIN 2
+// #define XSHUT_PIN 3 ToF stuff
 
-// called this way, it uses the default address 0x40
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
+
 Servo ESC;     // create servo object to control the ESC
+
 // Adafruit_VL53L1X vl53 = Adafruit_VL53L1X(XSHUT_PIN, IRQ_PIN);
+
 Adafruit_BNO055 bno = Adafruit_BNO055(55, 0x28, &Wire);
 Adafruit_BME280 bme;
 
@@ -26,8 +28,18 @@ bool setupDone = false;
 
 // our servo # counter and offsets
 uint8_t servonum = 0;
+Servo myservo0;
+Servo myservo1;
+Servo myservo2;
+Servo myservo3; //create servo object
+
 int offsets[4]; // Declare an array for servo values
 
+int pos0 = 0;
+int pos1 = 0;
+int pos2 = 0;
+int pos3 = 0;
+//initialize initial servo positions
 // Yaw control variables
 double SetpointYaw, InputYaw, OutputYaw;
 double KpYaw=4, KiYaw=0.2, KdYaw=0.5;
@@ -44,15 +56,16 @@ void setup() {
 
   while (!Serial) delay(10);  
   Serial.println("ROCKET");
+  //attach all servos (4)
+  myservo0.attach(2);
+  myservo1.attach(3);
+  myservo2.attach(4);
+  myservo3.attach(5);
+
 
   // Attaching the ESC and LED pins
   // ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
   pinMode(LED_BUILTIN, OUTPUT);
-  
-  // Setting up PWM
-  pwm.begin();
-  pwm.setOscillatorFrequency(25000000);
-  pwm.setPWMFreq(SERVO_FREQ);  // Analog servos run at ~50 Hz updates
 
   // Setting up sensors
   Wire.begin();
@@ -72,10 +85,10 @@ void setup() {
   delay(1000);
 
   // Servo angle offsets
-  offsets[0] = -15;
-  offsets[1] = -4;
+  offsets[0] = -5;
+  offsets[1] = 0;
   offsets[2] = 0;
-  offsets[3] = -10;
+  offsets[3] = -5;
 
   // Initialize the PID objects
   PID_Yaw.SetMode(AUTOMATIC);
@@ -89,19 +102,31 @@ void setup() {
   delay(10);
 }
 
-void calibrate_and_start() {
-  ESC.write(180); //setting to full throttle/max pulse_width
-  delay(5000); //should beep two times 
+// void calibrate_and_start() {
+//   ESC.write(180); //setting to full throttle/max pulse_width
+//   delay(5000); //should beep two times 
 
-  ESC.write(0); //setting to zero throttle
-  delay(5000); //should beep five times
-}
+//   ESC.write(0); //setting to zero throttle
+//   delay(5000); //should beep five times
+// }
 
 void setVaneAngle(uint8_t servo_num, double percent) {
     // where 0 is fully left, 100 is fully right 
     int offset = offsets[servo_num];
-    int pulselen =  210 + 0.9 * percent; // normalizing the range of servo between 210-300
-    pwm.setPWM(servo_num, 0, pulselen+offset);
+    int angle =  45 + 0.45 * percent; // normalizing the range of servo between 210-300
+
+    if (servo_num == 0){
+      myservo0.write(angle+offset);
+    }
+    else if (servo_num == 1){
+      myservo1.write(angle+offset);
+    }
+    else if (servo_num == 2){
+      myservo2.write(angle+offset);
+    }
+    else if (servo_num == 3){
+      myservo3.write(angle+offset);
+    }
 }
 
 void adjustYaw(double percent) {
@@ -154,7 +179,7 @@ void loop() {
   // setVaneAngle(0, 0);
   // setVaneAngle(2, 100);
 
-  // delay(1000);
+  delay(1000);
 
   // ESC.write(50); 
   // adjustPitch(100);
@@ -211,8 +236,8 @@ double readAltitude() {
 
 void readOrientation(double &yaw, double &pitch) {
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
-  yaw = euler.x();    // Heading
-  pitch = euler.z();  // Pitch
+  yaw = euler.z();    // Heading
+  pitch = euler.y();  // Pitch
   Serial.print("Yaw: ");
   Serial.println(yaw);
 
@@ -230,5 +255,3 @@ void adjustServos(double servoAngle) {
   // Adjust servo angles based on PID output
   // Placeholder: Implement your servo control logic here
 }
-
-

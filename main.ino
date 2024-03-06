@@ -39,6 +39,9 @@ int pos0 = 0;
 int pos1 = 0;
 int pos2 = 0;
 int pos3 = 0;
+
+int  killswitch = 9; 
+
 //initialize initial servo positions
 // Yaw control variables
 double SetpointYaw, InputYaw, OutputYaw;
@@ -66,6 +69,7 @@ void setup() {
   // Attaching the ESC and LED pins
   // ESC.attach(22,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(killswitch,INPUT);
 
   // Setting up sensors
   Wire.begin();
@@ -208,7 +212,7 @@ void loop() {
   int SetpointPitch = 0;
 
 
-  while(1) {
+  while(digitalRead(killswitch) == HIGH) {
 
       // InputAltitude = readAltitude(); // Implement this function to read from your barometer
       readOrientation(InputYaw, InputPitch); // This updates InputYaw and InputPitch
@@ -255,3 +259,6 @@ void adjustServos(double servoAngle) {
   // Adjust servo angles based on PID output
   // Placeholder: Implement your servo control logic here
 }
+
+
+

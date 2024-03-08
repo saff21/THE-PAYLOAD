@@ -8,7 +8,7 @@ WiFiServer server(23);
 
 void setup() {
   Serial.begin(115200);
-  pinMode(9, OUTPUT);
+  pinMode(4, OUTPUT);
   
   WiFi.softAP(ssid, password);
   Serial.println("AP Started");
@@ -21,7 +21,7 @@ void setup() {
 
 void loop() {
   //Making sure killswitch is OFF by default
-  digitalWrite(9, LOW);
+  digitalWrite(4, LOW);
 
   // Check for a client connection
   WiFiClient client = server.available();
@@ -42,12 +42,12 @@ void loop() {
       }
 
       String type = doc["type"]; // Get the message type
-      Serial.print("Received Type: ");
-      Serial.println(type);
+      // Serial.print("Received Type: ");
+      // Serial.println(type);
 
       if (type == "kill_switch") {
         int value = doc["value"]; // Get the kill switch value
-        digitalWrite(9, value == 1 ? LOW : HIGH); // Handle the kill switch
+        digitalWrite(4, value == 1 ? LOW : HIGH); // Handle the kill switch
         Serial.print("Kill Switch Value: ");
         Serial.println(value);
       } else if (type == "pid") {
@@ -55,16 +55,19 @@ void loop() {
         float i = doc["i"]; // Get I value
         float d = doc["d"]; // Get D value
         // Handle PID values here
-        Serial.print("PID Values - P: ");
+        // Serial.print("PID Values - P: ");
+        Serial.print("P:");
         Serial.print(p);
-        Serial.print(", I: ");
+        Serial.print("I:");
         Serial.print(i);
-        Serial.print(", D: ");
-        Serial.println(d);
+        Serial.print("D:");
+        Serial.print(d);
+        Serial.println("xx");
+
 
         // Transmit PID values over TX
-        String pidMessage = String(p) + ":" + String(i) + ":" + String(d) + "\n";
-        Serial.print(pidMessage); // This line sends the PID string over TX
+        // String pidMessage = String(p) + ":" + String(i) + ":" + String(d) + "\n";
+        // Serial.print(pidMessage); // This line sends the PID string over TX
       }
 
       // Clear the buffer to ensure no stale data is processed

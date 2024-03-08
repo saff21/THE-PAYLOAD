@@ -40,17 +40,22 @@ int pos1 = 0;
 int pos2 = 0;
 int pos3 = 0;
 
+int Kp = 4;
+int Kd = 0.1;
+int Ki = 0.1;
+
+
 int  killswitch = 9; 
 
 //initialize initial servo positions
 // Yaw control variables
 double SetpointYaw, InputYaw, OutputYaw;
-double KpYaw=4, KiYaw=0.2, KdYaw=0.5;
+double KpYaw=Kp, KiYaw=Ki, KdYaw=Kd; //add another Kd_a for altitude
 PID PID_Yaw(&InputYaw, &OutputYaw, &SetpointYaw, KpYaw, KiYaw, KdYaw, DIRECT);
 
 // Pitch control variables
 double SetpointPitch, InputPitch, OutputPitch;
-double KpPitch=4, KiPitch=0.2, KdPitch=0.5;
+double KpPitch=Kp, KiPitch=Ki, KdPitch=Kd; //equal to above 
 PID PID_Pitch(&InputPitch, &OutputPitch, &SetpointPitch, KpPitch, KiPitch, KdPitch, DIRECT);
 
 
@@ -106,13 +111,13 @@ void setup() {
   delay(10);
 }
 
-// void calibrate_and_start() {
-//   ESC.write(180); //setting to full throttle/max pulse_width
-//   delay(5000); //should beep two times 
+void calibrate_and_start() {
+  ESC.write(180); //setting to full throttle/max pulse_width
+  delay(5000); //should beep two times 
 
-//   ESC.write(0); //setting to zero throttle
-//   delay(5000); //should beep five times
-// }
+  ESC.write(0); //setting to zero throttle
+  delay(5000); //should beep five times
+}
 
 void setVaneAngle(uint8_t servo_num, double percent) {
     // where 0 is fully left, 100 is fully right 
@@ -143,77 +148,56 @@ void adjustPitch(double percent) {
   setVaneAngle(3, 100-percent);
 }
 
+
+
  
 void loop() {
-  // while (setupDone == false) {
-  //   calibrate_and_start();
-  //   setupDone = true;
-  //   digitalWrite(LED_BUILTIN,HIGH);
-  //   delay(3000);
-  //   digitalWrite(LED_BUILTIN,LOW);
-  // }
-
-  // for (uint16_t pulselen = SERVOMIN; pulselen < SERVOMAX; pulselen++) {
-  //   pwm.setPWM(servonum, 0, pulselen-15);
-  //   pwm.setPWM(servonum+1, 0, pulselen+5);
-  //   pwm.setPWM(servonum+2, 0, pulselen);
-  //   pwm.setPWM(servonum+3, 0, pulselen);
-  //   delay(10);
-  // }
-
-  // delay(500);
-  // for (uint16_t pulselen = SERVOMAX; pulselen > SERVOMIN; pulselen--) {
-  //   pwm.setPWM(servonum, 0, pulselen-15);
-  //   pwm.setPWM(servonum+1, 0, pulselen+5);
-  //   pwm.setPWM(servonum+2, 0, pulselen);
-  //   pwm.setPWM(servonum+3, 0, pulselen);
-  //   delay(10);
-  // }
+  while (setupDone == false) {
+    calibrate_and_start();
+    setupDone = true;
+    digitalWrite(LED_BUILTIN,HIGH);
+    delay(3000);
+    digitalWrite(LED_BUILTIN,LOW);
+  }
 
 
-  // ESC.write(50);
-
-  // delay(1000);
-
-  // setVaneAngle(0, 100);
-  // setVaneAngle(2, 0);
-
-  // delay(1000);
-
-  // setVaneAngle(0, 0);
-  // setVaneAngle(2, 100);
-
-  delay(1000);
-
-  // ESC.write(50); 
-  // adjustPitch(100);
-  // delay(100);
-  // adjustYaw(0);
-  // delay(500);
-  // adjustYaw(50);
-  // delay(500);
-  // adjustYaw(100);
-  // delay(500);
-  // adjustYaw(50);
-  // delay(500);
-
-  // adjustPitch(0);
-  // delay(500);
-  // adjustPitch(50);
-  // delay(500);
-  // adjustPitch(100);
-  // delay(500);
-  // adjustPitch(50);
-  // delay(500);
 
   // // Defining setpoints
   // int SetpointAltitude = 0; 
   int SetpointYaw = 0;
   int SetpointPitch = 0;
 
+  if (Serial.available()) {
+  // Read the data until newline
+    String data = Serial.readStringUntil("xx");
+
+    // Extract P, I, D values from the data string
+    int indexP = data.indexOf("P:") + 2; // Start of P value
+    int indexI = data.indexOf("I:") + 2; // Start of I label
+    int indexD = data.indexOf("D:") + 2; // Start of D label
+    int indexEnd = data.indexOf("xx");
+
+    // Adjusted extraction of substrings for P, I, D values
+    String pStr = data.substring(indexP, indexI - 2); // Extract P value, assuming there's a space or comma before I
+    String iStr = data.substring(indexI, indexD - 2); // Extract I value
+    String dStr = data.substring(indexD, indexEnd); // Extract D value, until the end of the string
+
+    // Debug: Print extracted strings to verify correct extraction
+    Serial.println(pStr); // Should print only the P value correctly
+    Serial.println(iStr);
+    Serial.println(dStr);
+
+    // Optionally convert string values to float if decimal values are needed
+    float P = pStr.toFloat();
+    float I = iStr.toFloat();
+    float D = dStr.toFloat();
+    // Use P, I, D as needed
+  }
+
+
 
   while(digitalRead(killswitch) == HIGH) {
-
+      Serial.println("working");
       // InputAltitude = readAltitude(); // Implement this function to read from your barometer
       readOrientation(InputYaw, InputPitch); // This updates InputYaw and InputPitch
 
@@ -229,6 +213,10 @@ void loop() {
 
       delay(10);
   }
+  // ESC.write(0); //setting to zero throttle
+  // Serial.println("killed - reset the arduino, reset the ESP, Reset GUI");
+  Serial.println(" ...... ");
+
 
 }
 
@@ -242,23 +230,13 @@ void readOrientation(double &yaw, double &pitch) {
   imu::Vector<3> euler = bno.getVector(Adafruit_BNO055::VECTOR_EULER);
   yaw = euler.z();    // Heading
   pitch = euler.y();  // Pitch
-  Serial.print("Yaw: ");
-  Serial.println(yaw);
+  // Serial.print("Yaw: ");
+  // Serial.println(yaw);
 
-  Serial.print("Pitch: ");
-  Serial.println(pitch);
+  // Serial.print("Pitch: ");
+  // Serial.println(pitch);
 }
 
-
-void adjustThrust(double thrust) {
-  // Adjust rocket thrust based on PID output
-  // Placeholder: Implement your thrust control logic here
-}
-
-void adjustServos(double servoAngle) {
-  // Adjust servo angles based on PID output
-  // Placeholder: Implement your servo control logic here
-}
 
 
 
